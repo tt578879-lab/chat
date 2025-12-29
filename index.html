@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat Web Nâng Cao</title>
+
+    <!-- Firebase v8 -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background: #f2f2f2;
+        }
+
+        .box {
+            width: 400px;
+            margin: 80px auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        h2 {
+            text-align: center;
+        }
+
+        input, button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 10px;
+        }
+
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #45a049;
+        }
+
+        #messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ccc;
+            padding: 10px;
+            margin-bottom: 10px;
+        }
+
+        .msg {
+            margin-bottom: 8px;
+            padding: 5px 10px;
+            border-radius: 6px;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .msg.mine {
+            background-color: #DCF8C6; /* màu xanh nhạt */
+            margin-left: auto;
+            text-align: right;
+        }
+
+        .msg.other {
+            background-color: #EEE;
+            margin-right: auto;
+            text-align: left;
+        }
+
+        .time {
+            font-size: 0.8em;
+            color: #555;
+            margin-top: 2px;
+        }
+    </style>
+</head>
+<body>
+
+<!-- 🔐 LOGIN -->
+<div id="loginBox" class="box">
+    <h2>🔐 Đăng nhập</h2>
+    <input id="loginName" placeholder="Nhập tên của bạn">
+    <button onclick="login()">Vào chat</button>
+</div>
+
+<!-- 💬 CHAT -->
+<div id="chatBox" class="box" style="display:none;">
+    <h2>💬 Chat công cộng</h2>
+    <div id="messages"></div>
+    <input id="message" placeholder="Nhập tin nhắn">
+    <button onclick="sendMessage()">Gửi</button>
+</div>
+
+<script>
+    // 🔹 Firebase config
+    var firebaseConfig = {
+        apiKey: "AIzaSyDfX5KUU4Z8cncHw-9X78l3B13WeBUggpg",
+        authDomain: "muisi-216d1.firebaseapp.com",
+        databaseURL: "https://muisi-216d1-default-rtdb.firebaseio.com",
+        projectId: "muisi-216d1",
+        storageBucket: "muisi-216d1.appspot.com",
+        messagingSenderId: "279308962260",
+        appId: "1:279308962260:web:f75b67dc29d9e879bf2e41"
+    };
+
+    firebase.initializeApp(firebaseConfig);
+    var database = firebase.database();
+
+    var currentUser = localStorage.getItem("chatUser");
+
+    if (currentUser) {
+        showChat();
+    }
+
+    // 🔹 Đăng nhập
+    function login() {
+        var name = document.getElementById("loginName").value.trim();
+        if (name === "") {
+            alert("Vui lòng nhập tên");
+            return;
+        }
+        localStorage.setItem("chatUser", name);
+        currentUser = name;
+        showChat();
+    }
+
+    // 🔹 Hiển thị chat và bật gửi tin nhắn bằng Enter
+    function showChat() {
+        document.getElementById("loginBox").style.display = "none";
+        document.getElementById("chatBox").style.display = "block";
+
+        document.getElementById("message").addEventListener("keypress", function(e) {
+            if (e.key === "Enter") {
+                sendMessage();
+            }
+        });
+    }
+
+    // 🔹 Gửi tin nhắn (cố định tên)
+    function sendMessage() {
+        var text = document.getElementById("message").value.trim();
+        if (text === "") return;
+
+        var timestamp = new Date().getTime();
+
+        database.ref("messages").push({
+            name: currentUser,
+            text: text,
+            time: timestamp
+        });
+
+        document.getElementById("message").value = "";
+    }
+
+    // 🔹 Nhận tin nhắn realtime
+    database.ref("messages").on("child_added", function(snapshot) {
+        var msg = snapshot.val();
+
+        var div = document.createElement("div");
+        div.className = "msg " + (msg.name === currentUser ? "mine" : "other");
+        div.innerHTML = msg.name + ": " + msg.text;
+
+        // Hiển thị thời gian an toàn
+        var t = msg.time ? new Date(msg.time) : new Date();
+        var hours = t.getHours().toString().padStart(2,'0');
+        var minutes = t.getMinutes().toString().padStart(2,'0');
+
+        var timeDiv = document.createElement("div");
+        timeDiv.className = "time";
+        timeDiv.textContent = hours + ":" + minutes;
+
+        div.appendChild(timeDiv);
+
+        var messagesDiv = document.getElementById("messages");
+        messagesDiv.appendChild(div);
+        messagesDiv.scrollTop = messagesDiv.scrollHeight;
+    });
+</script>
+
+</body>
+</html>
